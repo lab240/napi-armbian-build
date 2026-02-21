@@ -1,0 +1,11 @@
+#!/bin/sh
+
+./compile.sh BOARD=napi2 \
+BRANCH=vendor \
+RELEASE=noble \
+BUILD_MINIMAL=no \
+KERNEL_CONFIGURE=no \
+DESKTOP_ENVIRONMENT=xfce \
+BUILD_DESKTOP=yes \
+DESKTOP_ENVIRONMENT_CONFIG_NAME=minimal \
+DESKTOP_APPGROUPS_SELECTED=desktop_tools
