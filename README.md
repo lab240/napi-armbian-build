@@ -47,10 +47,13 @@ This repository contains custom patches and build configurations for creating Ar
 - Custom U-Boot configurations with NAPI-specific defconfigs
 
 ### System Customization
-- **Default User**: `napi` (password: standard hash-based authentication)
-- **Root Access**: Password set to `napilinux`
-- **Timezone**: Europe/Moscow
-- **Locale**: en_US.UTF-8
+- **Pre-installed user**: napi
+- **Pre-installed packages**: essential packages included for operation
+- **Pre-compiled overlays**: ready-to-use overlay files
+- **DTS overlay files**: located in `/root/dts` 
+- **Timezone**: Moscow
+- **Locale**: en
+- **Console speed**: 115200
 - **Auto-login**: Disabled for security
 
 ### Hardware Overlays
