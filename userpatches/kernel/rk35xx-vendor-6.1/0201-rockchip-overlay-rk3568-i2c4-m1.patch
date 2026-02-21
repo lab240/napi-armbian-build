@@ -1,0 +1,15 @@
+diff --git a/arch/arm64/boot/dts/rockchip/overlay/rk3568-i2c4-m1.dts b/arch/arm64/boot/dts/rockchip/overlay/rk3568-i2c4-m1.dts
+new file mode 100644
+index 000000000000..03c0cbf879cd
+--- /dev/null
++++ b/arch/arm64/boot/dts/rockchip/overlay/rk3568-i2c4-m1.dts
+@@ -0,0 +1,9 @@
++/dts-v1/;
++/plugin/;
++
++&i2c4 {
++    status = "okay";
++    pinctrl-names = "default";
++    pinctrl-0 = <&i2c4m1_xfer>;
++};
++

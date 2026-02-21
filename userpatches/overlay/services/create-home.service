@@ -1,0 +1,12 @@
+[Unit]
+Description=Create home directory for napi
+After=local-fs.target
+ConditionPathExists=!/home/napi
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c "mkdir -p /home/napi && cp -r /etc/skel/. /home/napi/ && chown -R napi:napi /home/napi"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

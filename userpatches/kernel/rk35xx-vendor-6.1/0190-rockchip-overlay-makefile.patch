@@ -1,0 +1,13 @@
+diff --git a/arch/arm64/boot/dts/rockchip/overlay/Makefile b/arch/arm64/boot/dts/rockchip/overlay/Makefile
+index 63b191d4a364..f381cbb5f9e8 100644
+--- a/arch/arm64/boot/dts/rockchip/overlay/Makefile
++++ b/arch/arm64/boot/dts/rockchip/overlay/Makefile
+@@ -290,6 +290,8 @@ dtbo-$(CONFIG_ARCH_ROCKCHIP) += \
+ dtbotxt-$(CONFIG_ARCH_ROCKCHIP) += \
+ 	README.rockchip-overlays
+ 
++dtbo-y += rk3568-can2.dtbo
++dtbo-y += rk3568-i2c4-m1.dtbo
+ targets += $(dtbo-y) $(dtbotxt-y)
+ 
+ always-y		:= $(dtbo-y) $(dtbotxt-y)
