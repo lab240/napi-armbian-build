@@ -2,6 +2,12 @@
 
 This repository contains custom patches and build configurations for creating Armbian images for NAPI-C and NAPI2 single-board computers based on Rockchip SoCs.
 
+## 📰 Recent Updates
+
+**February 2026**: Overlay directories have been reorganized for better SoC-specific support:
+- `overlays-rk3308/` - Device tree overlays for NAPI-C (RK3308)  
+- `overlays-rk3568/` - Device tree overlays for NAPI2 (RK3568)
+
 ## Supported Boards
 
 ### NAPI-C/P/Slot
@@ -33,7 +39,9 @@ This repository contains custom patches and build configurations for creating Ar
 │   ├── u-boot/                     # U-Boot patches
 │   │   └── v2024.10/
 │   └── overlay/                    # System overlay files
-│       ├── overlays/               # Device tree overlays
+│       ├── overlays-rk3308/        # Device tree overlays for RK3308 (NAPI-C)
+│       ├── overlays-rk3568/        # Device tree overlays for RK3568 (NAPI2)
+│       ├── overlays/               # Legacy/common device tree overlays
 │       ├── services/               # Systemd service configurations
 │       └── etc/                    # System configuration files
 ```
@@ -57,11 +65,15 @@ This repository contains custom patches and build configurations for creating Ar
 - **Auto-login**: Disabled for security
 
 ### Hardware Overlays
-Available device tree overlays in `userpatches/overlay/overlays/`:
+Available device tree overlays organized by SoC:
+
+**RK3308 (NAPI-C)** in `userpatches/overlay/overlays-rk3308/`:
 - UART interfaces: `rk3308-uart1`, `rk3308-uart2-m0`, `rk3308-uart3-m0`
 - I2C with RTC support: `rk3308-i2c1-ds1338`, `rk3308-i2c3-m0`
 - USB host: `rk3308-usb20-host`
-- CAN bus support (NAPI2): `rk3568-can2`
+
+**RK3568 (NAPI2)** in `userpatches/overlay/overlays-rk3568/`:
+- CAN bus support: `rk3568-can2`
 
 ### Pre-installed Software
 - **System Tools**: vim, net-tools, tcpdump, screen, memtester

@@ -249,16 +249,9 @@ InstallAdvancedDesktop()
 InstallExtraAll()
 {
 
-
-#### Install extra packets for ALL NAPI ####################################
-  #export DEBIAN_FRONTEND=noninteractive
-
-
-#########################################################################
-
 #### Disable first login wizard, set locale, set timezone ###############
 
-echo "[NAPI] Provision users (non-interactive)"
+echo "[CUSTOM] -> Set default pass, add default user napi"
 
 ROOT_PASS="napilinux"
 USERNAME="napi"
@@ -267,8 +260,9 @@ PASSWORD_HASH='$6$aKSitqfHesC39mSa$VyraNR1ZZsvYCTZEeDJC3XR9/375qc5VTpK8eKxMJ3zKC
 # root пароль
 echo "root:${ROOT_PASS}" | chpasswd
 
-echo "custom script done" > /root/info.txt
-echo `date` >> /root/info.txt
+echo `date` > /root/info.txt
+echo "#start vnc server"  > /root/good-scripts.txt
+echo "x11vnc -display :0 -nopw -listen 0.0.0.0 -forever &" >> /root/good-scripts.txt
 
 useradd -d "/home/$USERNAME" -s /bin/bash \
     -G sudo,video,render,audio,input,netdev,dialout \
@@ -279,19 +273,15 @@ usermod -p "$PASSWORD_HASH" "$USERNAME"
 
 #systemctl enable create-home.service
 
+echo "[CUSTOM] -> Disable first login script"
 # отключить мастер первого запуска Armbian
 rm -f /root/.not_logged_in_yet || true
 systemctl mask armbian-firstlogin.service 2>/dev/null || true
-ln -sf /etc/systemd/system/create-home.service \
-    /etc/systemd/system/multi-user.target.wants/create-home.service
 
-chmod 0755 /etc/update-motd.d/* 2>/dev/null || true
-
-echo "[NAPI] Users configured"
 ##########################################################################
 
 ####### LOCALES #########################################################
-  echo "[NAPI] Set locale & timezone"
+  echo "[CUSTOM] -> Install Moscow localtime, LANG=en"
 
   ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
   echo "Europe/Moscow" > /etc/timezone
@@ -302,28 +292,22 @@ echo "[NAPI] Users configured"
 #########################################################################
 
 ##### Apply overlays from userpathes/overlay/etc/sysctl.da #############
-  
-# userpatches/overlay on host is available in chroot as /tmp/overlay
 
-SRC="/tmp/overlay/etc/sysctl.d"
-DST="/etc/sysctl.d"
+echo "[CUSTOM] -> Install extra services sysctl.d/* for all"
+cp /tmp/overlay/etc/sysctl.d/* /etc/sysctl.d/
 
-if [[ -d "$SRC" ]]; then
-  install -d "$DST"
-  cp -a "$SRC/." "$DST/"
-  echo "[customize-image] sysctl.d copied from $SRC to $DST"
-else
-  echo "[customize-image] no $SRC, skipping"
-fi
 #########################################################################
 
-#### ONLY for desktop install gpu\mesa packets ###########################
+#### ONLY for desktop install gpu\mesa packets and graph ###########################
 
   if [ "${BUILD_DESKTOP}" = "yes" ]; then
+        echo "[CUSTOM] -> Install extra-packages for desktop"
 	apt-get update
-	apt-get install -y --no-install-recommends libgbm1 mesa-utils libgl1-mesa-dri mesa-vulkan-drivers 
+	apt-get install -y --no-install-recommends libgbm1 mesa-utils libgl1-mesa-dri mesa-vulkan-drivers \
+                                                   x11vnc mpv celluloid ffmpeg libavcodec-extra
 
-	fi      
+	echo "x11vnc -auth guess -display :0 -nopw -listen 0.0.0.0 -forever &" >/root/x11srv.sh
+  fi      
 
 #########################################################################
 
@@ -349,6 +333,8 @@ fi
 #ln -sf /etc/systemd/system/create-home.service \
 #    /etc/systemd/system/multi-user.target.wants/create-home.service
 
+echo "[CUSTOM] -> Create create-home service"
+
 cp /tmp/overlay/services/create-home.service /etc/systemd/system/create-home.service
 ln -sf /etc/systemd/system/create-home.service \
     /etc/systemd/system/multi-user.target.wants/create-home.service
@@ -357,40 +343,163 @@ ln -sf /etc/systemd/system/create-home.service \
 
 
 ############## Compile OVERLAYS ##############################################
+echo "[CUSTOM] -> Compile overlays DTS - DTBO "
 
-echo `ls -R /usr/src/` >/root/lsusr.txt
-
-# компилировать dts overlays в dtbo
 mkdir -p /root/dts/
-for dts in /tmp/overlay/overlays/*.dts; do
-    dtc -@ -I dts -O dtb -o /boot/dtb/rockchip/overlay/$(basename ${dts%.dts}).dtbo "$dts"
+
+apt-get update
+apt-get install -y cpp
+
+if [ "${BOARD}" = "napic" ]; then
+        echo "[CUSTOM] -> Compile overlaysi for Napi based on 3308"
+
+mkdir -p /tmp/overlays-work/dt-bindings/gpio
+mkdir -p /tmp/overlays-work/dt-bindings/pinctrl
+mkdir -p /tmp/overlays-work/dt-bindings/interrupt-controller/
+cp /tmp/overlay/overlays-rk3308/*.dts /tmp/overlays-work/
+cp /tmp/overlay/dt-bindings/interrupt-controller/arm-gic.h /tmp/overlays-work/
+cp /tmp/overlay/dt-bindings/interrupt-controller/arm-gic.h /tmp/overlays-work/dt-bindings/interrupt-controller/arm-gic.h
+cp /tmp/overlay/dt-bindings/interrupt-controller/irq.h /tmp/overlays-work/dt-bindings/interrupt-controller/
+cp /tmp/overlay/dt-bindings/gpio/gpio.h /tmp/overlays-work/dt-bindings/gpio/
+cp /tmp/overlay/dt-bindings/pinctrl/rockchip.h /tmp/overlays-work/dt-bindings/pinctrl/
+
+# компилируем
+for dts in /tmp/overlays-work/*.dts; do
+    name=$(basename ${dts%.dts})
+    cpp -nostdinc -I /tmp/overlays-work -I /tmp/overlays-work/dt-bindings -undef -x assembler-with-cpp "$dts" | \
+    dtc -@ -I dts -O dtb -o "/boot/dtb/rockchip/overlay/${name}.dtbo" - \
+    && echo "[ ok ] compiled: ${name}" \
+    || echo "[ FAIL ] failed: ${name}"
     cp "$dts" /root/dts/
 done
+
+# убираем
+rm -rf /tmp/overlays-work
+
+
+	ENV_FILE="${SDCARD}/boot/armbianEnv.txt"
+	echo "overlays=uart1 uart2-m0 uart3-m0 i2c1-ds1338 i2c3-m0 usb20-host" >> "$ENV_FILE"
+fi
+
+if [ "${BOARD}" = "napi2" ]; then
+        echo "[CUSTOM] -> Compile overlaysi for Nap2"
+        for dts in /tmp/overlay/overlays-rk3568/*.dts; do
+        #dtc -@ -I dts -O dtb -o /boot/dtb/rockchip/overlay/$(basename ${dts%.dts}).dtbo "$dts"
+        
+        cp "$dts" /root/dts/
+        done
+        
+        ENV_FILE="${SDCARD}/boot/armbianEnv.txt"
+        echo "overlays=" >> "$ENV_FILE"
+fi
+
 ##############################################################################
 
 
+echo "[CUSTOM] -> Repair mod scripts on login"
 ##########   MOTD: скрипты должны быть исполняемыми #########################
 if [ -d /etc/update-motd.d ]; then
   chmod 0755 /etc/update-motd.d/* 2>/dev/null || true
 fi
 ##############################################################################
 
+echo "[CUSTOM] -> Install extra packages for all"
 apt-get update  
 apt-get install -y --no-install-recommends vim net-tools can-utils mbpoll minicom tcpdump screen memtester xxd
-
-
-ENV_FILE="${SDCARD}/boot/armbianEnv.txt"
-echo "overlays=rk3308-uart1 rk3308-uart2-m0 rk3308-uart3-m0 rk3308-i2c1-ds1338 rk3308-i2c3-m0 rk3308-usb20-host" >> "$ENV_FILE"
 
 
 #################### NO Autologin ##############################
 
 cp /tmp/overlay/services/serial-getty-override.conf \
    /etc/systemd/system/serial-getty@.service.d/override.conf
+
 cp /tmp/overlay/services/serial-getty-override.conf \
    /etc/systemd/system/getty@.service.d/override.conf
 
 ################################################################
+
+
+echo "[CUSTOM] -> Repair lightdm start"
+########### enabe autostart graphics #########################
+if [ "${BOARD}" = "napi2" ] && [ "${BUILD_DESKTOP}" = "yes" ]; then
+    ln -s /lib/systemd/system/lightdm.service /etc/systemd/system/display-manager.service
+    systemctl daemon-reload
+fi
+##############################################################
+
+#####################################################################################
+## Personal tweaks (bacground, firefox from repo (not snapd) )
+## ALL do for root, service create-home will copy to /home/napi/.config/ on first boot
+##
+
+# copy background 
+
+echo "[CUSTOM] -> Install napi backgound"
+
+if [ "${BOARD}" = "napi2" ] && [ "${BUILD_DESKTOP}" = "yes" ]; then
+    mkdir -p /usr/share/backgrounds/
+    cp /tmp/overlay/backgrounds/napi-wallpaper.jpg /usr/share/backgrounds/napi-wallpaper.jpg
+    chmod 644 /usr/share/backgrounds/napi-wallpaper.jpg
+
+    #cp /tmp/overlay/ligthdm/* /etc/lightdm/
+    mkdir -p /etc/lightdm/slick-greeter.conf.d
+    cp /tmp/overlay/ligthdm/slick-greeter.conf /etc/lightdm/slick-greeter.conf.d/50-napi.conf
+fi
+
+
+# Install browsers 
+
+if [ "${BOARD}" = "napi2" ] && [ "${BUILD_DESKTOP}" = "yes" ]; then
+
+echo "[CUSTOM] -> Browsers part"
+
+#forbid snap for firefox anfd chrome
+
+  cat > /etc/apt/preferences.d/browsers-no-snap << 'EOF'
+Package: firefox*
+Pin: release o=Ubuntu*
+Pin-Priority: -1
+
+Package: chromium*
+Pin: release o=Ubuntu*
+Pin-Priority: -1
+EOF
+
+# install firefox
+
+echo "[CUSTOM] -> Install Firefox"
+add-apt-repository -y ppa:mozillateam/ppa
+apt-get update
+apt-get install -y firefox 
+
+#install crome (ucomment) will download about 300Mb
+#	echo "[CUSTOM] -> Install Chromium"
+#    apt install chromium
+
+
+# tweak for chromium window
+
+mkdir -p /root/.config/chromium/Default/Preferences
+cp /tmp/chromium-configs/chrome-window-repair-.config-chromium-Default-Preferences /root/.config/chromium/Default/Preferences/
+
+fi
+#############################################################
+
+
+########### FIX Display init windows ###################
+
+echo "[CUSTOM] -> XFCE teaks"
+
+if [ "${BOARD}" = "napi2" ] && [ "${BUILD_DESKTOP}" = "yes" ]; then
+    #mkdir -p /root/.config/xfce4/xfconf/xfce-perchannel-xml/
+    #cp /tmp/overlay/xfce-configs/* /root/.config/xfce4/xfconf/xfce-perchannel-xml/
+    
+    cp /tmp/overlay/xfce-configs/napi-wallpaper.desktop /etc/xdg/autostart/napi-wallpaper.desktop
+    cp /tmp/overlay/xfce-configs/napi-set-wallpaper.sh /usr/local/bin/napi-set-wallpaper.sh
+    chmod +x /usr/local/bin/napi-set-wallpaper.sh
+fi
+#######################################################
+
 }
 
 Main "$@"
