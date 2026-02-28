@@ -436,15 +436,6 @@ fi
 
 echo "[CUSTOM] -> Install napi backgound"
 
-if [ "${BOARD}" = "napi2" ] && [ "${BUILD_DESKTOP}" = "yes" ]; then
-    mkdir -p /usr/share/backgrounds/
-    cp /tmp/overlay/backgrounds/napi-wallpaper.jpg /usr/share/backgrounds/napi-wallpaper.jpg
-    chmod 644 /usr/share/backgrounds/napi-wallpaper.jpg
-
-    #cp /tmp/overlay/ligthdm/* /etc/lightdm/
-    mkdir -p /etc/lightdm/slick-greeter.conf.d
-    cp /tmp/overlay/ligthdm/slick-greeter.conf /etc/lightdm/slick-greeter.conf.d/50-napi.conf
-fi
 
 
 # Install browsers 
@@ -478,9 +469,11 @@ apt-get install -y firefox
 
 
 # tweak for chromium window
-
-mkdir -p /root/.config/chromium/Default/Preferences
-cp /tmp/chromium-configs/chrome-window-repair-.config-chromium-Default-Preferences /root/.config/chromium/Default/Preferences/
+echo "[CUSTOM] -> Tweak chromium"
+mkdir -p /root/cf/chrome-configs/
+cp /tmp/overlay/chromium-configs/chrome-window-repair-.config-chromium-Default-Preferences /root/cf/chrome-configs/chrome-window-repair-.config-chromium-Default-Preferences
+mkdir -p /etc/chromium/
+cp /tmp/overlay/chromium-configs/chrome-window-repair-.config-chromium-Default-Preferences  /etc/chromium/master_preferences
 
 fi
 #############################################################
@@ -491,14 +484,40 @@ fi
 echo "[CUSTOM] -> XFCE teaks"
 
 if [ "${BOARD}" = "napi2" ] && [ "${BUILD_DESKTOP}" = "yes" ]; then
+    mkdir -p /usr/share/backgrounds/
+    cp /tmp/overlay/backgrounds/napi-wallpaper.jpg /usr/share/backgrounds/napi-wallpaper.jpg
+    cp /tmp/overlay/backgrounds/napi-wallpaper.jpg /usr/share/backgrounds/armbian/napi-wallpaper.jpg
+    cp /tmp/overlay/backgrounds/napi-wallpaper.jpg /usr/share/backgrounds/xfce/napi-wallpaper.jpg
+    chmod 644 /usr/share/backgrounds/napi-wallpaper.jpg
+    chmod 644 /usr/share/backgrounds/armbian/napi-wallpaper.jpg
+    chmod 644 /usr/share/backgrounds/xfce/napi-wallpaper.jpg
+     
+    mkdir -p /root/cf/xfce-configs/
+    cp /tmp/overlay/lightdm/* /root/cf/xfce-configs/
+    #mkdir -p /etc/lightdm/slick-greeter.conf.d
+    cp /tmp/overlay/lightdm/slick-greeter.conf /etc/lightdm/slick-greeter.conf
+    
     #mkdir -p /root/.config/xfce4/xfconf/xfce-perchannel-xml/
     #cp /tmp/overlay/xfce-configs/* /root/.config/xfce4/xfconf/xfce-perchannel-xml/
     
+    cp /tmp/overlay/xfce-configs/* /root/cf/xfce-configs/
+
     cp /tmp/overlay/xfce-configs/napi-wallpaper.desktop /etc/xdg/autostart/napi-wallpaper.desktop
     cp /tmp/overlay/xfce-configs/napi-set-wallpaper.sh /usr/local/bin/napi-set-wallpaper.sh
+
+    # disable popup display window
+    cp /tmp/overlay/xfce-configs/xfce4-display-settings-autostart.desktop /etc/xdg/autostart/xfce4-display-settings-autostart.desktop
+    
     chmod +x /usr/local/bin/napi-set-wallpaper.sh
 fi
 #######################################################
+
+#### Fix WAN (remove) ###################################
+sed -i 's/get_wan_address()  { curl.*/get_wan_address()  { true; }/' /etc/update-motd.d/20-ip-info
+sed -i 's/get_wan6_address() { curl.*/get_wan6_address() { true; }/' /etc/update-motd.d/20-ip-info
+￼
+#########################################################￼
+￼
 
 }
 
