@@ -4,6 +4,14 @@ This repository contains custom patches and build configurations for creating Ar
 
 ## 📰 Recent Updates
 
+**March 2026**: Major repository restructuring:
+- Added `host-scripts/` directory for utility scripts
+- Moved deprecated patches to `userpatches/depricated/` folder
+- Reorganized kernel patches by version in `kernel/archive/` and `kernel/rk35xx-vendor-6.1/`
+- Added NAPI2 board configuration (`config/boards/napi2.csc`)
+- Enhanced overlay structure with desktop environment configurations
+- Added main build script `run-napi.sh` for streamlined building
+
 **February 2026**: Overlay directories have been reorganized for better SoC-specific support:
 - `overlays-rk3308/` - Device tree overlays for NAPI-C (RK3308)  
 - `overlays-rk3568/` - Device tree overlays for NAPI2 (RK3568)
@@ -28,22 +36,45 @@ This repository contains custom patches and build configurations for creating Ar
 ```
 ├── config/
 │   └── boards/
+│       ├── napi2.csc               # Board configuration for NAPI2
 │       └── napic.conf              # Board configuration for NAPI-C
+├── host-scripts/
+│   └── xzdnld.sh                   # Host utility scripts
 ├── userpatches/
+│   ├── bootscripts/
+│   │   └── boot-rockchip64-ttyS0.cmd  # Boot script for RK64
 │   ├── customize-image.sh          # Image customization script
-│   ├── kernel/                     # Kernel patches
-│   │   ├── spacemit-legacy-6.1/    # SpacemiT K1 patches
-│   │   ├── rk35xx-current/         # RK3568 mainline kernel patches
-│   │   ├── rk35xx-vendor-6.1/      # RK3568 vendor kernel patches
-│   │   └── archive/                # Archived patches
-│   ├── u-boot/                     # U-Boot patches
-│   │   └── v2024.10/
-│   └── overlay/                    # System overlay files
-│       ├── overlays-rk3308/        # Device tree overlays for RK3308 (NAPI-C)
-│       ├── overlays-rk3568/        # Device tree overlays for RK3568 (NAPI2)
-│       ├── overlays/               # Legacy/common device tree overlays
-│       ├── services/               # Systemd service configurations
-│       └── etc/                    # System configuration files
+│   ├── depricated/                 # Deprecated patches (moved from main kernel dir)
+│   │   ├── 0001-rockchip-rk3568-napi2-makefile.patch
+│   │   └── 0100-rockchip-rk3568-napi2-dts.patch
+│   ├── kernel/                     # Kernel patches organized by kernel version
+│   │   ├── archive/
+│   │   │   └── rockchip64-6.12/    # Archived patches for kernel 6.12
+│   │   │       ├── dt/
+│   │   │       │   └── rk3568-napi2.dts
+│   │   │       └── 0150-mmc-ignore-sd-read-ext-regs-error.patch
+│   │   └── rk35xx-vendor-6.1/      # RK3568 vendor kernel 6.1 patches
+│   │       ├── dt/
+│   │       │   └── rk3568-napi2.dts
+│   │       └── 0150-mmc-ignore-sd-read-ext-regs-error.patch
+│   ├── lib.config                  # Library configuration
+│   ├── overlay/                    # System overlay files
+│   │   ├── backgrounds/
+│   │   │   └── napi-wallpaper.jpg  # Custom wallpaper
+│   │   ├── chromium-configs/       # Browser configurations
+│   │   ├── dt-bindings/            # Device tree bindings headers
+│   │   ├── etc/                    # System configuration files
+│   │   ├── ligthdm/                # Display manager configs
+│   │   ├── overlays/               # Legacy/common device tree overlays
+│   │   ├── overlays-rk3308/        # Device tree overlays for RK3308 (NAPI-C)
+│   │   ├── overlays-rk3568/        # Device tree overlays for RK3568 (NAPI2)
+│   │   ├── services/               # Systemd service configurations
+│   │   └── xfce-configs/           # Desktop environment configurations
+│   └── u-boot/                     # U-Boot patches
+│       ├── legacy/                 # Legacy U-Boot patches
+│       └── v2024.10/               # U-Boot 2024.10 patches
+├── run-napi.sh                     # Main build script
+└── xznapi.sh                       # Additional utility script
 ```
 
 ## Key Features
@@ -79,7 +110,7 @@ Available device tree overlays organized by SoC:
 - **System Tools**: vim, net-tools, tcpdump, screen, memtester
 - **Industrial Tools**: can-utils, mbpoll, minicom
 - **Development**: xxd (hex editor)
-- **Optional Desktop**: Mesa/GPU drivers (when building desktop images)
+- **Optional Desktop**: Mesa/GPU drivers, XFCE configurations, custom wallpapers (when building desktop images)
 
 ## Build Instructions
 
@@ -109,9 +140,13 @@ Available device tree overlays organized by SoC:
 
 4. **Build NAPI2 Image**
    ```bash
+   # Use the main build script
+   ./run-napi.sh
+   
+   # Or manually with Armbian compile.sh
    ./compile.sh \
-     BOARD=<rk3568-board-name> \
-     BRANCH=current \
+     BOARD=napi2 \
+     BRANCH=vendor \
      RELEASE=noble \
      BUILD_MINIMAL=no \
      BUILD_DESKTOP=no \
@@ -122,9 +157,12 @@ Available device tree overlays organized by SoC:
 
 ### Kernel Patches
 - **RK3308 (NAPI-C)**: Device tree and Makefile modifications for board support
-- **RK3568 (NAPI2)**: Enhanced I/O support, CAN bus, additional overlays
-- **MMC Fix**: Ignore SD card extended register read errors
-- **SpacemiT K1**: Legacy kernel support for K1-based variants
+- **RK3568 (NAPI2)**: Enhanced I/O support, CAN bus, additional overlays  
+  - Current patches in `rk35xx-vendor-6.1/` with device tree support
+  - Archived patches moved to `archive/rockchip64-6.12/` 
+  - Deprecated patches moved to `depricated/` folder
+- **MMC Fix**: Ignore SD card extended register read errors (present in both active and archived versions)
+- **SpacemiT K1**: Legacy kernel support for K1-based variants (removed from current structure)
 
 ### U-Boot Patches
 - Custom defconfig for NAPI boards

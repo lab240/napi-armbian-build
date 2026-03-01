@@ -405,7 +405,11 @@ fi
 
 echo "[CUSTOM] -> Install extra packages for all"
 apt-get update  
-apt-get install -y --no-install-recommends vim net-tools can-utils mbpoll minicom tcpdump screen memtester xxd
+apt-get install -y --no-install-recommends \
+                vim net-tools can-utils mbpoll minicom \
+                tcpdump screen memtester xxd tree util-linux-extra \
+		mosquitto mosquitto-clients \
+                python3-pymodbus python3-pip python3-smbus2
 
 
 #################### NO Autologin ##############################
@@ -506,18 +510,23 @@ if [ "${BOARD}" = "napi2" ] && [ "${BUILD_DESKTOP}" = "yes" ]; then
     cp /tmp/overlay/xfce-configs/napi-set-wallpaper.sh /usr/local/bin/napi-set-wallpaper.sh
 
     # disable popup display window
-    cp /tmp/overlay/xfce-configs/xfce4-display-settings-autostart.desktop /etc/xdg/autostart/xfce4-display-settings-autostart.desktop
+#    cp /tmp/overlay/xfce-configs/xfce4-display-settings-autostart.desktop /etc/xdg/autostart/xfce4-display-settings-autostart.desktop
+     cp /tmp/overlay/xfce-configs/displays.xml /root/cf/xfce-configs/
+
+     cp /tmp/overlay/xfce-configs/displays.xml \
+       /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/displays.xml
     
     chmod +x /usr/local/bin/napi-set-wallpaper.sh
 fi
-#######################################################
-
 #### Fix WAN (remove) ###################################
-sed -i 's/get_wan_address()  { curl.*/get_wan_address()  { true; }/' /etc/update-motd.d/20-ip-info
-sed -i 's/get_wan6_address() { curl.*/get_wan6_address() { true; }/' /etc/update-motd.d/20-ip-info
-￼
-#########################################################￼
-￼
+sed -i '/^get_wan_address/s/.*/get_wan_address()  { true; }/' /etc/update-motd.d/20-ip-info
+sed -i '/^get_wan6_address/s/.*/get_wan6_address() { true; }/' /etc/update-motd.d/20-ip-info
+#########################################################
+
+###### FIX log to momitor and console ###############
+sed -i 's/^console=.*/console=serial/' /boot/armbianEnv.txt
+sed -i 's/^extraargs=.*/extraargs=cma=256M console=tty1 earlycon loglevel=7/' /boot/armbianEnv.txt
+######################################################
 
 }
 

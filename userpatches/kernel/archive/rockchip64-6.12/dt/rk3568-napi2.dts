@@ -634,14 +634,6 @@ hdmi_sound: hdmi-sound {
 	status = "okay";
 };
 
-&uart7 {
-	pinctrl-0 = <&uart7m1_xfer>;
-	pinctrl-names = "default";
-	rts-gpios = <&gpio3 RK_PB5 GPIO_ACTIVE_HIGH>;
-	rs485-rts-active-high;
-	linux,rs485-enabled-at-boot-time;
-	status = "okay";
-};
 
 &usb2phy0_host {
 	status = "okay";
@@ -755,3 +747,78 @@ hdmi_sound: hdmi-sound {
 &hdmi_sound {
 	status = "okay";
 };
+
+//########## overlays ##########################
+
+// can2
+
+&can2 {
+  status = "okay";
+};
+
+//i2c4
+
+&i2c4 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2c4m1_xfer>;
+};
+
+// RS485
+&uart7 {
+	pinctrl-0 = <&uart7m1_xfer>;
+	pinctrl-names = "default";
+	rts-gpios = <&gpio3 RK_PB5 GPIO_ACTIVE_HIGH>;
+	rs485-rts-active-high;
+	linux,rs485-enabled-at-boot-time;
+	status = "okay";
+};
+
+//uarts in PLD
+
+&uart3 {
+        pinctrl-0 = <&uart3m0_xfer>;
+        pinctrl-names = "default";
+        status = "okay";
+};
+
+&uart4 {
+        pinctrl-0 = <&uart4m1_xfer>;
+        pinctrl-names = "default";
+        status = "okay";
+};
+
+&uart5 {
+        pinctrl-0 = <&uart5m1_xfer>;
+        pinctrl-names = "default";
+        status = "okay";
+};
+
+//RTC
+&i2c5 { 
+	status = "okay";
+
+        pinctrl-names = "default";
+        pinctrl-0 = <&i2c5m0_xfer>;
+
+        #address-cells = <1>;
+        #size-cells = <0>;
+        /* RTC */
+        rtc@68 {
+            compatible = "dallas,ds1338";
+            reg = <0x68>;
+            status = "okay";
+        };
+       /* EEPROM CAT24AA02 (2Kbit = 256 bytes) @0x50 */
+        eeprom@50 {
+           compatible = "atmel,24c02";
+           reg = <0x50>;
+
+           size = <256>;
+           pagesize = <16>;
+
+           status = "okay";
+         };
+};
+
+

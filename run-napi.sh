@@ -81,10 +81,16 @@ elif [ "${BUILD_TYPE}" = "minimal" ]; then
     BUILD_DESKTOP_ARGS="BUILD_MINIMAL=yes"
 fi
 
+#SKIP_ARMBIAN_REPO="yes" \
+#LOCAL_MIRROR="distrohub.kyiv.ua/armbian" \
+#DOWNLOAD_MIRROR="china" \
+#KEEP_ORIGINAL_OS_RELEASE="yes"\
+
 ./compile.sh BOARD=${BOARD} \
 BRANCH=${BRANCH} \
 RELEASE=noble \
 KERNEL_CONFIGURE=no \
 REVISION="$(date +%d%h-%H%M)" \
+KEEP_ORIGINAL_OS_RELEASE="yes"\
 ${CLEAN_LEVEL} \
 ${BUILD_DESKTOP_ARGS}
