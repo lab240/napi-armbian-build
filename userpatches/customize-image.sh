@@ -346,6 +346,7 @@ ln -sf /etc/systemd/system/create-home.service \
 echo "[CUSTOM] -> Compile overlays DTS - DTBO "
 
 mkdir -p /root/dts/
+mkdir -p /boot/overlay-user/
 
 apt-get update
 apt-get install -y cpp
@@ -381,16 +382,48 @@ rm -rf /tmp/overlays-work
 	echo "overlays=uart1 uart2-m0 uart3-m0 i2c1-ds1338 i2c3-m0 usb20-host" >> "$ENV_FILE"
 fi
 
+#compile vendor dts
+
 if [ "${BOARD}" = "napi2" ]; then
-        echo "[CUSTOM] -> Compile overlaysi for Nap2"
-        for dts in /tmp/overlay/overlays-rk3568/*.dts; do
-        #dtc -@ -I dts -O dtb -o /boot/dtb/rockchip/overlay/$(basename ${dts%.dts}).dtbo "$dts"
+	if [ "${BRANCH}" = "vendor" ]; then
+        	echo "[CUSTOM] -> copy bindings for vendor"
+        	mkdir -p /tmp/overlays-work/dt-bindings/gpio
+        	mkdir -p /tmp/overlays-work/dt-bindings/pinctrl
+        	mkdir -p /tmp/overlays-work/dt-bindings/interrupt-controller
+        	mkdir -p /tmp/overlays-work/dt-bindings/display
+        	mkdir -p /tmp/overlays-work/uapi/linux
+        	
+		cp /tmp/overlay/overlays-rk3568-vendor/*.dts /tmp/overlays-work/
         
-        cp "$dts" /root/dts/
+		cp /tmp/overlay/includes-rk35xx-vendor/dt-bindings/interrupt-controller/arm-gic.h /tmp/overlays-work/dt-bindings/interrupt-controller/
+        	cp /tmp/overlay/includes-rk35xx-vendor/dt-bindings/interrupt-controller/irq.h /tmp/overlays-work/dt-bindings/interrupt-controller/
+        	cp /tmp/overlay/includes-rk35xx-vendor/dt-bindings/gpio/gpio.h /tmp/overlays-work/dt-bindings/gpio/
+        	cp /tmp/overlay/includes-rk35xx-vendor/dt-bindings/pinctrl/rockchip.h /tmp/overlays-work/dt-bindings/pinctrl/
+        	cp /tmp/overlay/includes-rk35xx-vendor/dt-bindings/display/media-bus-format.h /tmp/overlays-work/dt-bindings/display/
+        	cp /tmp/overlay/includes-rk35xx-vendor/uapi/linux/media-bus-format.h /tmp/overlays-work/uapi/linux/
+	fi
+	
+        if [ "${BRANCH}" = "current" ]; then
+        	echo "[CUSTOM] -> copy bindings for current"
+		cp /tmp/overlay/overlays-rk3568-current/*.dts /tmp/overlays-work/
+	fi
+
+        echo "[CUSTOM] -> Compile overlays for Napi2"
+        for dts in /tmp/overlays-work/*.dts; do
+                name=$(basename "${dts%.dts}")
+                cpp -nostdinc -I /tmp/overlays-work -I /tmp/overlays-work/dt-bindings -undef -x assembler-with-cpp "$dts" | \
+                dtc -@ -I dts -O dtb -o "/boot/dtb/rockchip/overlay/${name}.dtbo" - \
+                && echo "[CUSTOM] -> [ OK ] compiled: ${name}" \
+                || echo "[CUSTOM] -> [ FAIL ] failed: ${name}"
+                cp "$dts" /root/dts/
         done
+# убираем
+	rm -rf /tmp/overlays-work
+	cp /tmp/overlay/overlays-rk3568/* /root/dts/
         
         ENV_FILE="${SDCARD}/boot/armbianEnv.txt"
         echo "overlays=" >> "$ENV_FILE"
+        echo "user_overlays=" >> "$ENV_FILE"
 fi
 
 ##############################################################################
