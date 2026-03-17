@@ -1,6 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Display Settings
-Exec=xfce4-display-settings --minimal
-OnlyShowIn=XFCE;
-Hidden=true

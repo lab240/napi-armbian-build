@@ -1,218 +1,240 @@
-# NAPI Armbian Build
+# Napi-armbian-build
 
-This repository contains custom patches and build configurations for creating Armbian images for NAPI-C and NAPI2 single-board computers based on Rockchip SoCs.
+Custom Armbian build configurations, kernel patches, device tree overlays,
+and build utilities for **NAPI2** (RK3568) and **NAPI-C** (RK3308) industrial SBCs.
 
-## 📰 Recent Updates
+> 📧 To order boards or discuss integration: **dj.novikov@gmail.com**  
+> 🔧 Board documentation and GPIO pinouts: **[napi-boards](https://github.com/napilab/napi-boards)**
 
-**March 2026**: Major repository restructuring:
-- Added `host-scripts/` directory for utility scripts
-- Moved deprecated patches to `userpatches/depricated/` folder
-- Reorganized kernel patches by version in `kernel/archive/` and `kernel/rk35xx-vendor-6.1/`
-- Added NAPI2 board configuration (`config/boards/napi2.csc`)
-- Enhanced overlay structure with desktop environment configurations
-- Added main build script `run-napi.sh` for streamlined building
+---
 
-**February 2026**: Overlay directories have been reorganized for better SoC-specific support:
-- `overlays-rk3308/` - Device tree overlays for NAPI-C (RK3308)  
-- `overlays-rk3568/` - Device tree overlays for NAPI2 (RK3568)
+## What's Inside
 
-## Supported Boards
-
-### NAPI-C/P/Slot
-- **SoC**: Rockchip RK3308 (quad-core ARM Cortex-A35)
-- **RAM**: 256MB-512MB
-- **Features**: WiFi support, minimal headless configuration
-- **Board Config**: `config/boards/napic.conf`
-- **Documentation**: https://napiworld.ru/docs/napi-intro/
-
-### NAPI2
-- **SoC**: Rockchip RK3568 (quad-core ARM Cortex-A55)
-- **Features**: Enhanced I/O capabilities, CAN bus support
-- **Kernel Support**: Current and vendor 6.1 kernels
-- **Documentation**: https://napiworld.ru/docs/napi-intro/
-
-## Repository Structure
+This repository is a drop-in overlay for the [Armbian build system](https://github.com/armbian/build).
+Clone it, copy the files into your Armbian tree, and build — no manual patching needed.
 
 ```
+napi-armbian-build/
+│
 ├── config/
 │   └── boards/
-│       ├── napi2.csc               # Board configuration for NAPI2
-│       └── napic.conf              # Board configuration for NAPI-C
-├── host-scripts/
-│   └── xzdnld.sh                   # Host utility scripts
+│       ├── napi2.csc               # NAPI2 board config (RK3568J)
+│       └── napic.conf              # NAPI-C board config (RK3308)
+│
 ├── userpatches/
+│   ├── customize-image.sh          # Image customization: users, packages,
+│   │                               #   overlay compilation, desktop tweaks
+│   ├── lib.config                  # Armbian lib overrides
+│   ├── config-default.conf
 │   ├── bootscripts/
-│   │   └── boot-rockchip64-ttyS0.cmd  # Boot script for RK64
-│   ├── customize-image.sh          # Image customization script
-│   ├── depricated/                 # Deprecated patches (moved from main kernel dir)
-│   │   ├── 0001-rockchip-rk3568-napi2-makefile.patch
-│   │   └── 0100-rockchip-rk3568-napi2-dts.patch
-│   ├── kernel/                     # Kernel patches organized by kernel version
-│   │   ├── archive/
-│   │   │   └── rockchip64-6.12/    # Archived patches for kernel 6.12
-│   │   │       ├── dt/
-│   │   │       │   └── rk3568-napi2.dts
-│   │   │       └── 0150-mmc-ignore-sd-read-ext-regs-error.patch
-│   │   └── rk35xx-vendor-6.1/      # RK3568 vendor kernel 6.1 patches
-│   │       ├── dt/
-│   │       │   └── rk3568-napi2.dts
+│   │   └── boot-rockchip64-ttyS0.cmd
+│   ├── kernel/
+│   │   ├── archive/rockchip64-6.12/
+│   │   │   ├── dt/rk3568-napi2.dts         # NAPI2 DTS, mainline 6.12
+│   │   │   ├── dt/rk3308-napi-c.dts        # NAPI-C DTS, mainline 6.12
+│   │   │   └── 0150-mmc-ignore-sd-read-ext-regs-error.patch
+│   │   └── rk35xx-vendor-6.1/
+│   │       ├── dt/rk3568-napi2.dts         # NAPI2 DTS, vendor 6.1
 │   │       └── 0150-mmc-ignore-sd-read-ext-regs-error.patch
-│   ├── lib.config                  # Library configuration
-│   ├── overlay/                    # System overlay files
-│   │   ├── backgrounds/
-│   │   │   └── napi-wallpaper.jpg  # Custom wallpaper
-│   │   ├── chromium-configs/       # Browser configurations
-│   │   ├── dt-bindings/            # Device tree bindings headers
-│   │   ├── etc/                    # System configuration files
-│   │   ├── ligthdm/                # Display manager configs
-│   │   ├── overlays/               # Legacy/common device tree overlays
-│   │   ├── overlays-rk3308/        # Device tree overlays for RK3308 (NAPI-C)
-│   │   ├── overlays-rk3568/        # Device tree overlays for RK3568 (NAPI2)
-│   │   ├── services/               # Systemd service configurations
-│   │   └── xfce-configs/           # Desktop environment configurations
-│   └── u-boot/                     # U-Boot patches
-│       ├── legacy/                 # Legacy U-Boot patches
-│       └── v2024.10/               # U-Boot 2024.10 patches
-├── run-napi.sh                     # Main build script
-└── xznapi.sh                       # Additional utility script
+│   ├── overlay/
+│   │   ├── overlays-rk3308/        # NAPI-C device tree overlays
+│   │   ├── overlays-rk3568/        # NAPI2 device tree overlays
+│   │   ├── overlays-rk3568-current/  # NAPI2 overlays, mainline kernel
+│   │   ├── overlays-rk3568-vendor/   # NAPI2 overlays, vendor kernel
+│   │   ├── dt-bindings.tar.gz      # DT header includes (packed, ~600 files)
+│   │   ├── includes-rk35xx-vendor.tar.gz
+│   │   ├── etc/                    # sysctl.d and other system configs
+│   │   ├── services/               # systemd units (create-home, getty)
+│   │   ├── xfce-configs/           # XFCE desktop tweaks
+│   │   ├── lightdm/                # Display manager config
+│   │   ├── chromium-configs/
+│   │   └── backgrounds/            # Custom wallpaper
+│   └── u-boot/
+│       ├── legacy/u-boot-radxa-rk35xx/   # NAPI2 U-Boot patches
+│       └── v2024.10/                     # NAPI-C U-Boot patches
+│
+├── run-mynapi.sh                   # Build wrapper (see below)
+├── xznapi.sh                       # Compress output image with xz + sha256
+├── check-overlay.sh                # Compile single overlay without full kernel build
+└── napi-pack.sh                    # Pack this repo into timestamped archive
 ```
 
-## Key Features
+---
 
-### Custom Hardware Support
-- **NAPI-C**: RK3308-based minimal SBC with WiFi
-- **NAPI2**: RK3568-based SBC with enhanced connectivity
-- Device tree overlays for UART, I2C, and CAN interfaces
-- Custom U-Boot configurations with NAPI-specific defconfigs
+## Quick Start
 
-### System Customization
-- **Pre-installed user**: napi
-- **Pre-installed packages**: essential packages included for operation
-- **Pre-compiled overlays**: ready-to-use overlay files
-- **DTS overlay files**: located in `/root/dts` 
-- **Timezone**: Moscow
-- **Locale**: en
-- **Console speed**: 115200
-- **Auto-login**: Disabled for security
+### 1. Setup Armbian build system
 
-### Hardware Overlays
-Available device tree overlays organized by SoC:
+```bash
+git clone --depth=1 https://github.com/armbian/build ~/arb
+```
 
-**RK3308 (NAPI-C)** in `userpatches/overlay/overlays-rk3308/`:
-- UART interfaces: `rk3308-uart1`, `rk3308-uart2-m0`, `rk3308-uart3-m0`
-- I2C with RTC support: `rk3308-i2c1-ds1338`, `rk3308-i2c3-m0`
-- USB host: `rk3308-usb20-host`
+### 2. Apply napi-armbian-build
 
-**RK3568 (NAPI2)** in `userpatches/overlay/overlays-rk3568/`:
-- CAN bus support: `rk3568-can2`
+```bash
+git clone https://github.com/your-org/napi-armbian-build.git
+cd napi-armbian-build
 
-### Pre-installed Software
-- **System Tools**: vim, net-tools, tcpdump, screen, memtester
-- **Industrial Tools**: can-utils, mbpoll, minicom
-- **Development**: xxd (hex editor)
-- **Optional Desktop**: Mesa/GPU drivers, XFCE configurations, custom wallpapers (when building desktop images)
+cp -r config/  ~/arb/config/
+cp -r userpatches/ ~/arb/userpatches/
+cp run-mynapi.sh xznapi.sh check-overlay.sh napi-pack.sh ~/arb/
+chmod +x ~/arb/*.sh
+```
 
-## Build Instructions
+### 3. Build
 
-1. **Setup Armbian Build System**
-   ```bash
-   git clone https://github.com/armbian/build
-   cd build
-   ```
+```bash
+cd ~/arb
 
-2. **Clone This Repository**
-   ```bash
-   git clone <this-repo-url> napi-armbian-build
-   cp -r napi-armbian-build/config/* config/
-   cp -r napi-armbian-build/userpatches/* userpatches/
-   ```
+# NAPI2 — minimal image, mainline kernel 6.12
+./run-mynapi.sh --napi2 --current --minimal
 
-3. **Build NAPI-C Image**
-   ```bash
-   ./compile.sh \
-     BOARD=napic \
-     BRANCH=current \
-     RELEASE=noble \
-     BUILD_MINIMAL=no \
-     BUILD_DESKTOP=no \
-     KERNEL_CONFIGURE=no
-   ```
+# NAPI2 — minimal image, vendor kernel 6.1 (recommended for production)
+./run-mynapi.sh --napi2 --vendor --minimal
 
-4. **Build NAPI2 Image**
-   ```bash
-   # Use the main build script
-   ./run-napi.sh
-   
-   # Or manually with Armbian compile.sh
-   ./compile.sh \
-     BOARD=napi2 \
-     BRANCH=vendor \
-     RELEASE=noble \
-     BUILD_MINIMAL=no \
-     BUILD_DESKTOP=no \
-     KERNEL_CONFIGURE=no
-   ```
+# NAPI2 — XFCE desktop, vendor kernel
+./run-mynapi.sh --napi2 --vendor --desktop
 
-## Patch Details
+# NAPI-C — minimal image (always current, always minimal)
+./run-mynapi.sh --napic
 
-### Kernel Patches
-- **RK3308 (NAPI-C)**: Device tree and Makefile modifications for board support
-- **RK3568 (NAPI2)**: Enhanced I/O support, CAN bus, additional overlays  
-  - Current patches in `rk35xx-vendor-6.1/` with device tree support
-  - Archived patches moved to `archive/rockchip64-6.12/` 
-  - Deprecated patches moved to `depricated/` folder
-- **MMC Fix**: Ignore SD card extended register read errors (present in both active and archived versions)
-- **SpacemiT K1**: Legacy kernel support for K1-based variants (removed from current structure)
+# Kernel only (faster iteration)
+./run-mynapi.sh --napi2 --current --kernelonly
+```
 
-### U-Boot Patches
-- Custom defconfig for NAPI boards
-- Boot configuration optimized for serial console
-- Device tree blob selection for proper hardware initialization
+Output images: `~/arb/output/images/`
 
-## Configuration Notes
+---
 
-### Memory Optimization
-- **CMA Size**: Set to 16MB for boards with limited RAM (512MB or less)
-- **Modules Blacklist**: Graphics-related modules disabled for headless operation
-- **Performance**: CPU governor and frequency scaling configured per board
+## Build Scripts
 
-### Security Settings
-- Root password authentication required
-- SSH enabled by default
-- No automatic login configured
-- Systemd services properly configured
+### `run-mynapi.sh`
 
-### Networking
-- IPv6 disabled by default (sysctl configuration)
-- WiFi support for NAPI-C with MAC address fixation
-- Ethernet optimization for industrial applications
+Wrapper over `compile.sh` with sane defaults for NAPI boards.
 
-## Troubleshooting
+```
+Options:
+  --napi2 / --napic      Select board (default: napi2)
+  --current              Mainline kernel 6.12
+  --vendor               Rockchip BSP kernel 6.1
+  --edge                 Edge kernel
+  --minimal              Minimal console image
+  --desktop              XFCE desktop (napi2 only)
+  --kernelonly           Build kernel package only
+  --noclean              Skip cache cleanup (faster rebuilds)
+  --skiparmbian          Skip apt.armbian.com (if upstream is down)
+  --help                 Show usage
+```
 
-### Common Issues
-1. **Boot Fails**: Check U-Boot configuration and DTB file path
-2. **No Serial Output**: Verify console configuration in board config
-3. **WiFi Issues**: Ensure MAC address fixation rules are applied
-4. **Overlay Not Loading**: Check overlay compilation and armbianEnv.txt
+### `check-overlay.sh`
 
-### Debug Information
-- Build logs available in Armbian build output
-- Runtime information stored in `/root/info.txt`
-- Device tree compilation logs in `/root/dts/`
+Compile a single `.dts` overlay against the kernel headers — without rebuilding the kernel.
+Uses the kernel source tree in `~/arb/cache/sources/`.
 
-## Contributing
+```bash
+./check-overlay.sh lvds          # → /tmp/lvds.dtbo
+./check-overlay.sh rs485-uart3   # → /tmp/rs485-uart3.dtbo
+```
 
-When contributing patches:
-1. Follow existing naming conventions (`NNNN-description.patch`)
-2. Test patches on actual hardware when possible
-3. Document hardware-specific requirements
-4. Update this README for new features
+### `xznapi.sh`
 
-## License
+Find a built image by ID fragment, compress with `xz -9 -T8`, generate `sha256`.
 
-This project follows the same licensing terms as the Armbian project. Individual patches may have their own licensing requirements - check patch headers for details.
+```bash
+./xznapi.sh 0317    # finds output/images/*0317*.img → *.img.xz + *.img.xz.sha256
+```
 
-## Support
+### `napi-pack.sh`
 
-For hardware-specific issues with NAPI boards, please contact the board manufacturer.
-For Armbian build system issues, refer to the [Armbian documentation](https://docs.armbian.com/).
+Pack all napi-relevant files from `~/arb` into a timestamped archive for backup or transfer.
+
+```bash
+./napi-pack.sh
+# → ~/tmp/napi-pack-20260317-1423.tar.gz
+```
+
+---
+
+## Kernel Branches
+
+| Branch    | Kernel | Use case                                                        |
+|-----------|--------|-----------------------------------------------------------------|
+| `current` | 6.12   | Mainline — upstream development, overlay debugging              |
+| `vendor`  | 6.1    | Rockchip BSP — production, MPP hardware video (`/dev/mpp_service`) |
+
+---
+
+## Image Defaults
+
+After build, the image has:
+
+| Parameter     | Value                                                        |
+|---------------|--------------------------------------------------------------|
+| User          | `napi` (sudo), `root`                                        |
+| Root password | `napilinux`                                                  |
+| Timezone      | Europe/Moscow                                                |
+| Locale        | en_US.UTF-8                                                  |
+| Console       | ttyS2, 115200                                                |
+| Auto-login    | Disabled                                                     |
+| IPv6          | Disabled (sysctl)                                            |
+| SSH           | Enabled                                                      |
+| First-login wizard | Disabled                                               |
+| Pre-installed | vim, net-tools, can-utils, mbpoll, minicom, tcpdump, screen, i2c-tools, python3-pymodbus, mosquitto, mbusd, memtester |
+| Desktop (optional) | XFCE, Firefox (non-snap), x11vnc, Mesa/GPU drivers    |
+
+Compiled overlay `.dtbo` files are placed in `/boot/dtb/rockchip/overlay/`.
+Source `.dts` files are saved to `/root/dts/`.
+
+---
+
+## Overlays
+
+Enable in `/boot/armbianEnv.txt` after flashing:
+
+```
+overlays=rk3568-napi2-rs485-uart3 rk3568-napi2-can0
+```
+
+**NAPI2 (RK3568)** — `overlay/overlays-rk3568*/`:
+
+| File                      | Interface       |
+|---------------------------|-----------------|
+| `rs485-uart3`             | RS485 / UART3   |
+| `rk3568-can2`             | CAN 2.0B        |
+| `lvds-current`            | LVDS, mainline  |
+| `lvds-vendor`             | LVDS, vendor    |
+| `i2c4-m1`                 | I2C4            |
+| `rtc1338`                 | RTC DS1338      |
+
+**NAPI-C (RK3308)** — `overlay/overlays-rk3308/`:
+
+| File                      | Interface       |
+|---------------------------|-----------------|
+| `rk3308-uart1/2/3/4`     | UART            |
+| `rk3308-i2c1/3`          | I2C             |
+| `rk3308-i2c1-ds1307/38`  | I2C + RTC       |
+| `rk3308-spi1-w5500`      | SPI Ethernet    |
+| `rk3308-usb20-host`      | USB 2.0 Host    |
+
+---
+
+## Related
+
+- **[napi-boards](https://github.com/your-org/napi-boards)** — GPIO pinouts, overlay docs, usage examples
+- **[napiworld.ru](https://napiworld.ru/docs/napi2/)** — Official product page (ru)
+- **[NapiLinux](https://napilinux.ru)** — Custom OS with NapiConfig web interface
+- **[Downloads](https://download.napilinux.ru/)** — Ready-made images
+
+---
+
+## Ordering & Contact
+
+To order NAPI2 / NAPI-C boards or custom carrier boards,
+or to discuss integration into your project:
+
+📧 **dj.novikov@gmail.com**
+
+---
+
+`rockchip` `rk3568` `rk3308` `armbian` `embedded-linux` `device-tree` `industrial`
+`sbc` `single-board-computer` `rs485` `can-bus` `modbus` `iot-gateway` `lvds` `rockchip-rk3568`
