@@ -385,6 +385,7 @@ fi
 #compile vendor dts
 
 if [ "${BOARD}" = "napi2" ]; then
+	BRANCH=$(cat /tmp/overlay/napi-branch.txt 2>/dev/null)
 	if [ "${BRANCH}" = "vendor" ]; then
         	echo "[CUSTOM] -> copy bindings for vendor"
         	mkdir -p /tmp/overlays-work/dt-bindings/gpio
@@ -405,6 +406,11 @@ if [ "${BOARD}" = "napi2" ]; then
 	
         if [ "${BRANCH}" = "current" ]; then
         	echo "[CUSTOM] -> copy bindings for current"
+        	mkdir -p /tmp/overlays-work/dt-bindings/gpio
+        	mkdir -p /tmp/overlays-work/dt-bindings/pinctrl
+        	mkdir -p /tmp/overlays-work/dt-bindings/interrupt-controller
+        	mkdir -p /tmp/overlays-work/dt-bindings/display
+        	mkdir -p /tmp/overlays-work/uapi/linux
 		cp /tmp/overlay/overlays-rk3568-current/*.dts /tmp/overlays-work/
 	fi
 
@@ -441,9 +447,8 @@ apt-get update
 apt-get install -y --no-install-recommends \
                 vim net-tools can-utils mbpoll minicom \
                 tcpdump screen memtester xxd tree util-linux-extra \
-		mosquitto mosquitto-clients mbusd i2c-tools \
-                python3-pymodbus python3-pip python3-smbus2
-
+		mosquitto mosquitto-clients i2c-tools \
+                python3-pymodbus python3-pip python3-smbus2 git tmux
 
 #################### NO Autologin ##############################
 
@@ -552,14 +557,96 @@ if [ "${BOARD}" = "napi2" ] && [ "${BUILD_DESKTOP}" = "yes" ]; then
     chmod +x /usr/local/bin/napi-set-wallpaper.sh
 fi
 #### Fix WAN (remove) ###################################
+echo "[CUSTOM] -> Remove WAN in initial motd "
 sed -i '/^get_wan_address/s/.*/get_wan_address()  { true; }/' /etc/update-motd.d/20-ip-info
 sed -i '/^get_wan6_address/s/.*/get_wan6_address() { true; }/' /etc/update-motd.d/20-ip-info
 #########################################################
 
 ###### FIX log to momitor and console ###############
+echo "[CUSTOM] -> kernel log  to monitor and console "
 sed -i 's/^console=.*/console=serial/' /boot/armbianEnv.txt
 sed -i 's/^extraargs=.*/extraargs=cma=256M console=tty1 earlycon loglevel=7/' /boot/armbianEnv.txt
 ######################################################
+
+########### Add headers, make, glibc  ############################
+echo "[CUSTOM] -> Install make and Ko"
+apt-get update
+apt-get install -y make cmake gcc build-essential flex bison libssl-dev pkg-config
+#echo "[CUSTOM] -> install headers "
+
+#### Headers added fom parameter compile.sh ########
+
+#apt-get install -y linux-headers-rockchip64
+
+#if [ "${BRANCH}" = "vendor" ]; then
+#	apt-get install -y linux-headers-vendor-rk35xx
+#fi
+
+#if [ "${BRANCH}" = "current" ]; then
+#	apt-get install -y linux-headers-current-rockchip64
+#fi
+
+#apt-get install -y linux-headers-${BRANCH}-${LINUXFAMILY}
+
+#cat /etc/apt/sources.list.d/*.list 2>/dev/null
+#apt-cache search linux-headers | head -20
+#dpkg -i /tmp/debs/linux-headers-*-rockchip64_*.deb 
+#dpkg -i /tmp/debs/linux-libc-dev-*-rockchip64_*.deb
+#apt-get update
+#apt-get install -y linux-headers-rockchip64
+####################################################
+
+########## Install make and Ko ##############################
+#apt-get install -y make gcc build-essential
+############################################################
+
+
+### Set russian mirror 
+#echo "[CUSTOM] -> set rumirror"
+#if [ -f /etc/apt/sources.list.d/armbian.sources ]; then
+#    sed -i 's|http://apt.armbian.com|http://stpete-mirror.armbian.com|g' \
+#        /etc/apt/sources.list.d/armbian.sources
+#fi
+##############
+
+#echo "[CUSTOM] -> set rumirror"
+#SOURCES_FILE="/etc/apt/sources.list.d/armbian.sources"
+#if [ -f "$SOURCES_FILE" ]; then
+#    echo "[CUSTOM] -> file found, replacing..."
+#    sed -i 's|http://apt.armbian.com|http://stpete-mirror.armbian.com|g' "$SOURCES_FILE"
+#    echo "[CUSTOM] -> result:"
+#    cat "$SOURCES_FILE"
+#else
+#    echo "[CUSTOM] -> file NOT found at $SOURCES_FILE"
+#fi
+
+########## Compile mbusd ####################
+#echo "[CUSTOM] -> compile mbusd"
+#cd /tmp
+#git clone https://github.com/3cky/mbusd.git
+#cd mbusd
+#cmake .
+#make
+#make install
+#############################################
+
+########## Set russian mirror ###############
+
+#echo "[CUSTOM] -> set rumirror"
+#if [ -f /etc/apt/sources.list.d/armbian.sources ]; then
+#    sed -i 's|http://apt.armbian.com|http://stpete-mirror.armbian.com|g' \
+#        /etc/apt/sources.list.d/armbian.sources
+#    echo "[CUSTOM] -> mirror set OK"
+#else
+#    echo "[CUSTOM] -> armbian.sources not found, skipping (SKIP_ARMBIAN_REPO mode?)"
+#fi
+
+echo "[CUSTOM] -> add napilab repo, install mbusd"
+# NapiLab repo + mbusd for Armbian build
+curl -fsSL https://repo.napilab.ru/napilab.gpg | gpg --dearmor | tee /usr/share/keyrings/napilab.gpg > /dev/null
+echo "deb [arch=arm64 signed-by=/usr/share/keyrings/napilab.gpg] https://repo.napilab.ru stable main" > /etc/apt/sources.list.d/napilab.list
+apt-get update
+apt-get install -y mbusd
 
 }
 

@@ -1,7 +1,7 @@
 #!/bin/bash
-# napi-pack.sh — упаковывает napi-файлы из ~/arb в архив для переноса в репо
-# Установка:    cp napi-pack.sh ~/arb/ && chmod +x ~/arb/napi-pack.sh
-# Запускать на fazenda: cd ~/arb && ./napi-pack.sh
+# run-napi-pack.sh — упаковывает napi-файлы из ~/arb в архив для переноса в репо
+# Установка:    cp run-napi-pack.sh ~/arb/ && chmod +x ~/arb/run-napi-pack.sh
+# Запускать на fazenda: cd ~/arb && ./run-napi-pack.sh
 # Архив создаётся в:    ~/tmp/napi-pack-YYYYMMDD-HHMM.tar.gz
 set -e
 
@@ -120,7 +120,7 @@ done
 
 # --- утилиты ~/arb (рядом с userpatches) ---
 echo "==> утилиты сборки"
-for f in run-mynapi.sh xznapi.sh check-overlay.sh napi-pack.sh; do
+for f in run-mynapi.sh check-overlay.sh run-napi-pack.sh run-clean-images.sh run-xz-number.sh; do
     if [ -f "$ARB/$f" ]; then
         cp "$ARB/$f" "$TMP/armbian/$f"
         echo "  [OK] $f"

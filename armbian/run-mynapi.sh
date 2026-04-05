@@ -103,15 +103,24 @@ if [ "${KERNEL_ONLY}" = "yes" ]; then
 else
     BUILD_ONLY_ARG=""
 fi
+# --skiparmbian как fallback если московское зеркало недоступно
 SKIP_REPO_ARG=""
+MIRROR_ARG=""
 if [ "${SKIP_ARMBIAN}" = "yes" ]; then
     SKIP_REPO_ARG="SKIP_ARMBIAN_REPO=yes"
+else
+    MIRROR_ARG="LOCAL_MIRROR=stpete-mirror.armbian.com/apt"
 fi
-#DOWNLOAD_MIRROR="china" \
+
+echo "${BRANCH}" > userpatches/overlay/napi-branch.txt
+
+#DOWNLOAD_MIRROR="china"
 ./compile.sh BOARD=${BOARD} \
 BRANCH=${BRANCH} \
 RELEASE=noble \
 KERNEL_CONFIGURE=no \
+INSTALL_HEADERS=yes \
+${MIRROR_ARG} \
 ${BUILD_ONLY_ARG} \
 ${SKIP_REPO_ARG} \
 REVISION="$(date +%d%h-%H%M)" \

@@ -43,7 +43,7 @@ napi-armbian-build/
 │   │   ├── overlays-rk3568-vendor/   # NAPI2 overlays, vendor kernel
 │   │   ├── dt-bindings.tar.gz      # DT header includes (packed, ~600 files)
 │   │   ├── includes-rk35xx-vendor.tar.gz
-│   │   ├── etc/                    # sysctl.d and other system configs
+│   │   ├── etc/                    # sysctl.d, apt sources and other system configs
 │   │   ├── services/               # systemd units (create-home, getty)
 │   │   ├── xfce-configs/           # XFCE desktop tweaks
 │   │   ├── lightdm/                # Display manager config
@@ -54,9 +54,10 @@ napi-armbian-build/
 │       └── v2024.10/                     # NAPI-C U-Boot patches
 │
 ├── run-mynapi.sh                   # Build wrapper (see below)
-├── xznapi.sh                       # Compress output image with xz + sha256
+├── run-xz-number.sh                # Compress output image with xz + sha256
+├── run-clean-images.sh             # Delete output images by pattern
 ├── check-overlay.sh                # Compile single overlay without full kernel build
-└── napi-pack.sh                    # Pack this repo into timestamped archive
+└── run-napi-pack.sh                # Pack this repo into timestamped archive
 ```
 
 ---
@@ -77,7 +78,7 @@ cd napi-armbian-build
 
 cp -r config/  ~/arb/config/
 cp -r userpatches/ ~/arb/userpatches/
-cp run-mynapi.sh xznapi.sh check-overlay.sh napi-pack.sh ~/arb/
+cp run-mynapi.sh run-xz-number.sh run-clean-images.sh check-overlay.sh run-napi-pack.sh ~/arb/
 chmod +x ~/arb/*.sh
 ```
 
@@ -136,21 +137,32 @@ Uses the kernel source tree in `~/arb/cache/sources/`.
 ./check-overlay.sh rs485-uart3   # → /tmp/rs485-uart3.dtbo
 ```
 
-### `xznapi.sh`
+### `run-xz-number.sh`
 
 Find a built image by ID fragment, compress with `xz -9 -T8`, generate `sha256`.
 
 ```bash
-./xznapi.sh 0317    # finds output/images/*0317*.img → *.img.xz + *.img.xz.sha256
+./run-xz-number.sh 0317    # finds output/images/*0317*.img → *.img.xz + *.img.xz.sha256
 ```
 
-### `napi-pack.sh`
+### `run-clean-images.sh`
+
+Delete output images matching one or more patterns. Supports `-y` (skip confirmation)
+and `-s` (show contents only).
+
+```bash
+./run-clean-images.sh napic vendor    # delete all images matching *napic* or *vendor*
+./run-clean-images.sh -s              # show what's in output/images/
+./run-clean-images.sh -y 25Mar        # delete without confirmation
+```
+
+### `run-napi-pack.sh`
 
 Pack all napi-relevant files from `~/arb` into a timestamped archive for backup or transfer.
 
 ```bash
-./napi-pack.sh
-# → ~/tmp/napi-pack-20260317-1423.tar.gz
+./run-napi-pack.sh
+# → ~/tmp/napi-pack-20260405-1423.tar.gz
 ```
 
 ---
@@ -164,6 +176,22 @@ Pack all napi-relevant files from `~/arb` into a timestamped archive for backup 
 
 ---
 
+## APT Mirror & Napilab Repository
+
+The build uses the Russian Armbian mirror (`stpete-mirror.armbian.com`) by default
+to avoid connectivity issues with `.ua` mirrors.
+
+The image includes the **Napilab APT repository** which provides packages
+not available in standard Ubuntu Noble repos:
+
+- **mbusd** — Modbus TCP to RTU gateway daemon
+- **mbscan** — Modbus device scanner
+- **modbus-slave** — Modbus slave emulator
+
+These packages are pre-configured in the image and available via `apt-get install`.
+
+---
+
 ## Image Defaults
 
 After build, the image has:
@@ -174,12 +202,14 @@ After build, the image has:
 | Root password | `napilinux`                                                  |
 | Timezone      | Europe/Moscow                                                |
 | Locale        | en_US.UTF-8                                                  |
-| Console       | ttyS2, 115200                                                |
+| Console       | ttyS2, 1500000                                               |
 | Auto-login    | Disabled                                                     |
 | IPv6          | Disabled (sysctl)                                            |
 | SSH           | Enabled                                                      |
 | First-login wizard | Disabled                                               |
-| Pre-installed | vim, net-tools, can-utils, mbpoll, minicom, tcpdump, screen, i2c-tools, python3-pymodbus, mosquitto, mbusd, memtester |
+| Kernel headers | Installed (`linux-headers-${BRANCH}-${LINUXFAMILY}`)       |
+| APT repos     | Ubuntu Noble + Armbian + Napilab                             |
+| Pre-installed | vim, net-tools, can-utils, mbpoll, minicom, tcpdump, screen, i2c-tools, python3-pymodbus, mosquitto, mbusd, memtester, build-essential |
 | Desktop (optional) | XFCE, Firefox (non-snap), x11vnc, Mesa/GPU drivers    |
 
 Compiled overlay `.dtbo` files are placed in `/boot/dtb/rockchip/overlay/`.
