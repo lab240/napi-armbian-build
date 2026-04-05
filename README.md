@@ -178,8 +178,7 @@ Pack all napi-relevant files from `~/arb` into a timestamped archive for backup 
 
 ## APT Mirror & Napilab Repository
 
-The build uses the Russian Armbian mirror (`stpete-mirror.armbian.com`) by default
-to avoid connectivity issues with `.ua` mirrors.
+The build uses the Russian Armbian mirror (`stpete-mirror.armbian.com`), can be changed.
 
 The image includes the **Napilab APT repository** which provides packages
 not available in standard Ubuntu Noble repos:
