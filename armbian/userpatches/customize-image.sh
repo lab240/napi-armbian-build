@@ -645,8 +645,34 @@ echo "[CUSTOM] -> add napilab repo, install mbusd"
 # NapiLab repo + mbusd for Armbian build
 curl -fsSL https://repo.napilab.ru/napilab.gpg | gpg --dearmor | tee /usr/share/keyrings/napilab.gpg > /dev/null
 echo "deb [arch=arm64 signed-by=/usr/share/keyrings/napilab.gpg] https://repo.napilab.ru stable main" > /etc/apt/sources.list.d/napilab.list
-apt-get update
-apt-get install -y mbusd
+apt-get update || true
+apt-get purge -y libgpiod2 libgpiod-dev gpiod || true
+apt-get install -y mbusd gpiod
+
+
+
+### ONLY FOR RTK ##########
+#### INSTALL DEBS ########
+if [ -f /tmp/overlay/napi-client.txt ]; then
+    echo "[CUSTOM] -> Add RTK VIDEO  Server"
+    CLIENT=$(cat /tmp/overlay/napi-client.txt)
+    echo "[CUSTOM] -> Add RTK: DEBS OK "
+    if [ -d /tmp/overlay/${CLIENT}-debs ]; then
+        mkdir -p /root/${CLIENT}-debs
+        cp /tmp/overlay/${CLIENT}-debs/*.deb /root/${CLIENT}-debs/
+
+        # depenedeces
+        apt-get install -y libjson-perl libllvm17t64 libpq5 libxslt1.1 \
+            postgresql postgresql-16 postgresql-client-16 \
+            postgresql-client-common postgresql-common ssl-cert \
+            2>&1 || true
+
+        # Теперь клиентские пакеты
+        dpkg -i /root/${CLIENT}-debs/*.deb 2>&1 || true
+        find /etc/apt/sources.list.d/ -name '*rt*' -exec mv {} {}.disabled \; 2>/dev/null || true
+    fi
+fi
+############################
 
 }
 

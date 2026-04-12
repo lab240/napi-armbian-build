@@ -267,3 +267,10 @@ or to discuss integration into your project:
 
 `rockchip` `rk3568` `rk3308` `armbian` `embedded-linux` `device-tree` `industrial`
 `sbc` `single-board-computer` `rs485` `can-bus` `modbus` `iot-gateway` `lvds` `rockchip-rk3568`
+
+
+## Updates
+
+### 12-04-2026
+
+- Replace gpiod 1.6.3 -> gpiod 2.2 from repi.napilab.ru
